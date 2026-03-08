@@ -29,11 +29,11 @@ export function ColorPalette() {
                     if (!obj) continue;
                     let stitches;
                     if (obj.type === "run") {
-                      stitches = generateRunStitches(obj.points, obj.stitchLength, obj.runType);
+                      stitches = generateRunStitches(obj.points, obj.stitchLength, obj.runType, obj.lockStitches);
                     } else if (obj.type === "satin") {
-                      stitches = generateSatinStitches(obj.railLeft, obj.railRight, obj.density, obj.pullCompensation, obj.underlayType);
+                      stitches = generateSatinStitches(obj.railLeft, obj.railRight, obj.density, obj.pullCompensation, obj.underlayType, obj.lockStitches);
                     } else if (obj.type === "fill") {
-                      stitches = generateFillStitches(obj.points, obj.fillAngle, obj.density, obj.maxStitchLength, obj.stagger, obj.underlayType, obj.underlayAngle);
+                      stitches = generateFillStitches(obj.points, obj.fillAngle, obj.density, obj.maxStitchLength, obj.stagger, obj.underlayType, obj.underlayAngle, obj.lockStitches);
                     }
                     if (stitches) {
                       updateObject(id, { generatedStitches: stitches });

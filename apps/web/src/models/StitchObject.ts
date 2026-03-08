@@ -17,6 +17,7 @@ export interface BaseStitchObject {
   threadId: string;
   visible: boolean;
   locked: boolean;
+  lockStitches: boolean;
   points: Point[];
   generatedStitches: Stitch[];
 }
@@ -56,6 +57,7 @@ export function createRunStitch(threadId: string, points: Point[]): RunStitchObj
     threadId,
     visible: true,
     locked: false,
+    lockStitches: true,
     points,
     generatedStitches: [],
     stitchLength: 2.5,
@@ -76,6 +78,7 @@ export function createSatinColumn(
     threadId,
     visible: true,
     locked: false,
+    lockStitches: true,
     points,
     generatedStitches: [],
     railLeft,
@@ -93,6 +96,7 @@ export function createFillRegion(threadId: string, points: Point[]): FillRegionO
     threadId,
     visible: true,
     locked: false,
+    lockStitches: true,
     points,
     generatedStitches: [],
     fillAngle: 0,

@@ -1,11 +1,65 @@
 import type { Point, Stitch } from "@/models/StitchObject";
 
+// ─── Lock Stitches ──────────────────────────────────────────────────────────
+
+export function generateLockStitches(
+  startOrEnd: "start" | "end",
+  stitches: Stitch[]
+): Stitch[] {
+  if (stitches.length < 2) return [];
+
+  const LOCK_DIST = 0.3; // mm
+
+  let anchor: Stitch;
+  let next: Stitch;
+
+  if (startOrEnd === "start") {
+    anchor = stitches[0]!;
+    next = stitches[1]!;
+  } else {
+    anchor = stitches[stitches.length - 1]!;
+    next = stitches[stitches.length - 2]!;
+  }
+
+  // Direction from anchor toward next stitch
+  const dx = next.x - anchor.x;
+  const dy = next.y - anchor.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len === 0) return [];
+
+  const ux = dx / len;
+  const uy = dy / len;
+
+  // Perpendicular direction
+  const px = -uy;
+  const py = ux;
+
+  // Lock stitch pattern: point -> point + 0.3mm along direction -> point -> point + 0.3mm perpendicular -> point
+  const lockStitches: Stitch[] = [
+    { x: anchor.x, y: anchor.y, type: "normal" },
+    { x: anchor.x + ux * LOCK_DIST, y: anchor.y + uy * LOCK_DIST, type: "normal" },
+    { x: anchor.x, y: anchor.y, type: "normal" },
+    { x: anchor.x + px * LOCK_DIST, y: anchor.y + py * LOCK_DIST, type: "normal" },
+    { x: anchor.x, y: anchor.y, type: "normal" },
+  ];
+
+  return lockStitches;
+}
+
+function applyLockStitches(stitches: Stitch[], lockStitchesEnabled: boolean): Stitch[] {
+  if (!lockStitchesEnabled || stitches.length < 2) return stitches;
+  const startLock = generateLockStitches("start", stitches);
+  const endLock = generateLockStitches("end", stitches);
+  return [...startLock, ...stitches, ...endLock];
+}
+
 // ─── Running Stitch ─────────────────────────────────────────────────────────
 
 export function generateRunStitches(
   points: Point[],
   stitchLength: number,
-  runType: "single" | "triple" = "single"
+  runType: "single" | "triple" = "single",
+  lockStitchesEnabled: boolean = true
 ): Stitch[] {
   if (points.length < 2) return [];
 
@@ -40,10 +94,10 @@ export function generateRunStitches(
     const backPass = [...forwardPass].reverse().map((s) => ({ ...s }));
     // Third forward pass: same as forward again
     const thirdPass = forwardPass.map((s) => ({ ...s }));
-    return [...forwardPass, ...backPass, ...thirdPass];
+    return applyLockStitches([...forwardPass, ...backPass, ...thirdPass], lockStitchesEnabled);
   }
 
-  return forwardPass;
+  return applyLockStitches(forwardPass, lockStitchesEnabled);
 }
 
 // ─── Satin Column ───────────────────────────────────────────────────────────
@@ -82,7 +136,8 @@ export function generateSatinStitches(
   railRight: Point[],
   density: number,
   pullCompensation: number,
-  underlayType: string = "none"
+  underlayType: string = "none",
+  lockStitchesEnabled: boolean = true
 ): Stitch[] {
   if (railLeft.length < 2 || railRight.length < 2) return [];
 
@@ -170,7 +225,7 @@ export function generateSatinStitches(
     }
   }
 
-  return stitches;
+  return applyLockStitches(stitches, lockStitchesEnabled);
 }
 
 /**
@@ -225,7 +280,8 @@ export function generateFillStitches(
   maxStitchLength: number,
   _stagger: number,
   underlayType: string = "none",
-  underlayAngle: number = 90
+  underlayAngle: number = 90,
+  lockStitchesEnabled: boolean = true
 ): Stitch[] {
   if (polygon.length < 3) return [];
 
@@ -247,7 +303,7 @@ export function generateFillStitches(
   const topStitches = generateFillRows(polygon, angle, rowSpacing, maxStitchLength);
   stitches.push(...topStitches);
 
-  return stitches;
+  return applyLockStitches(stitches, lockStitchesEnabled);
 }
 
 function generateFillRows(

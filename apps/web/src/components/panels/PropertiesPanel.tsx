@@ -33,15 +33,15 @@ export function PropertiesPanel() {
 
     let stitches;
     if (obj.type === "run") {
-      stitches = generateRunStitches(obj.points, obj.stitchLength, obj.runType);
+      stitches = generateRunStitches(obj.points, obj.stitchLength, obj.runType, obj.lockStitches);
     } else if (obj.type === "satin") {
       stitches = generateSatinStitches(
-        obj.railLeft, obj.railRight, obj.density, obj.pullCompensation, obj.underlayType
+        obj.railLeft, obj.railRight, obj.density, obj.pullCompensation, obj.underlayType, obj.lockStitches
       );
     } else if (obj.type === "fill") {
       stitches = generateFillStitches(
         obj.points, obj.fillAngle, obj.density, obj.maxStitchLength, obj.stagger,
-        obj.underlayType, obj.underlayAngle
+        obj.underlayType, obj.underlayAngle, obj.lockStitches
       );
     }
     if (stitches) {
@@ -157,6 +157,16 @@ export function PropertiesPanel() {
           </PropertyRow>
         </div>
       )}
+
+      <div className="flex flex-col gap-2.5 mt-2.5 pt-2.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <PropertyRow label="Lock Stitches">
+          <input
+            type="checkbox"
+            checked={selectedObj.lockStitches}
+            onChange={(e) => regenerate(selectedObj.id, { lockStitches: e.target.checked })}
+          />
+        </PropertyRow>
+      </div>
     </div>
   );
 }
