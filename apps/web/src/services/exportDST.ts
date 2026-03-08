@@ -144,6 +144,36 @@ export function calculateDesignInfo(design: Design): {
  * Color change:  bits 2,3,6,7 set → base = 0xC3
  * End:           0x00 0x00 0xF3
  */
+/**
+ * Decompose an integer into balanced ternary digits for powers [1, 3, 9, 27, 81].
+ * Each digit is -1, 0, or +1.
+ *
+ * DST uses balanced ternary, NOT simple greedy subtraction.
+ * For example: 2 = 3-1, 5 = 9-3-1, 14 = 27-9-3-1
+ */
+function toBalancedTernary(v: number): [number, number, number, number, number] {
+  const digits: number[] = [0, 0, 0, 0, 0];
+  let n = v;
+
+  for (let i = 0; i < 5; i++) {
+    // Proper modulo that always returns 0, 1, or 2
+    const rem = ((n % 3) + 3) % 3;
+    if (rem === 0) {
+      digits[i] = 0;
+    } else if (rem === 1) {
+      digits[i] = 1;
+      n -= 1;
+    } else {
+      // rem === 2 means we round up: use -1 and carry
+      digits[i] = -1;
+      n += 1;
+    }
+    n = Math.round(n / 3); // always exactly divisible, round for float safety
+  }
+
+  return digits as [number, number, number, number, number];
+}
+
 function encodeDSTStitch(
   dx: number,
   dy: number,
@@ -160,39 +190,21 @@ function encodeDSTStitch(
   if (isColorChange) b2 |= 0xC0; // bits 6,7
   else if (isJump) b2 |= 0x40;   // bit 6
 
-  // Encode Y using components: ±81, ±27, ±9, ±3, ±1
-  let ry = dy;
-  if (ry > 0) {
-    if (ry >= 81) { b2 |= 0x01; ry -= 81; } // byte 3 bit 0: y+81
-    if (ry >= 27) { b1 |= 0x04; ry -= 27; } // byte 2 bit 2: y+27
-    if (ry >= 9)  { b0 |= 0x04; ry -= 9; }  // byte 1 bit 2: y+9
-    if (ry >= 3)  { b1 |= 0x01; ry -= 3; }  // byte 2 bit 0: y+3
-    if (ry >= 1)  { b0 |= 0x01; }            // byte 1 bit 0: y+1
-  } else if (ry < 0) {
-    ry = -ry;
-    if (ry >= 81) { b2 |= 0x02; ry -= 81; } // byte 3 bit 1: y-81
-    if (ry >= 27) { b1 |= 0x08; ry -= 27; } // byte 2 bit 3: y-27
-    if (ry >= 9)  { b0 |= 0x08; ry -= 9; }  // byte 1 bit 3: y-9
-    if (ry >= 3)  { b1 |= 0x02; ry -= 3; }  // byte 2 bit 1: y-3
-    if (ry >= 1)  { b0 |= 0x02; }            // byte 1 bit 1: y-1
-  }
+  // Encode Y using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
+  const yd = toBalancedTernary(dy);
+  if (yd[0] > 0) b0 |= 0x01; else if (yd[0] < 0) b0 |= 0x02; // y±1
+  if (yd[1] > 0) b1 |= 0x01; else if (yd[1] < 0) b1 |= 0x02; // y±3
+  if (yd[2] > 0) b0 |= 0x04; else if (yd[2] < 0) b0 |= 0x08; // y±9
+  if (yd[3] > 0) b1 |= 0x04; else if (yd[3] < 0) b1 |= 0x08; // y±27
+  if (yd[4] > 0) b2 |= 0x01; else if (yd[4] < 0) b2 |= 0x02; // y±81
 
-  // Encode X using components: ±81, ±27, ±9, ±3, ±1
-  let rx = dx;
-  if (rx > 0) {
-    if (rx >= 81) { b2 |= 0x20; rx -= 81; } // byte 3 bit 5: x+81
-    if (rx >= 27) { b1 |= 0x20; rx -= 27; } // byte 2 bit 5: x+27
-    if (rx >= 9)  { b0 |= 0x20; rx -= 9; }  // byte 1 bit 5: x+9
-    if (rx >= 3)  { b1 |= 0x80; rx -= 3; }  // byte 2 bit 7: x+3
-    if (rx >= 1)  { b0 |= 0x80; }            // byte 1 bit 7: x+1
-  } else if (rx < 0) {
-    rx = -rx;
-    if (rx >= 81) { b2 |= 0x10; rx -= 81; } // byte 3 bit 4: x-81
-    if (rx >= 27) { b1 |= 0x10; rx -= 27; } // byte 2 bit 4: x-27
-    if (rx >= 9)  { b0 |= 0x10; rx -= 9; }  // byte 1 bit 4: x-9
-    if (rx >= 3)  { b1 |= 0x40; rx -= 3; }  // byte 2 bit 6: x-3
-    if (rx >= 1)  { b0 |= 0x40; }            // byte 1 bit 6: x-1
-  }
+  // Encode X using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
+  const xd = toBalancedTernary(dx);
+  if (xd[0] > 0) b0 |= 0x80; else if (xd[0] < 0) b0 |= 0x40; // x±1
+  if (xd[1] > 0) b1 |= 0x80; else if (xd[1] < 0) b1 |= 0x40; // x±3
+  if (xd[2] > 0) b0 |= 0x20; else if (xd[2] < 0) b0 |= 0x10; // x±9
+  if (xd[3] > 0) b1 |= 0x20; else if (xd[3] < 0) b1 |= 0x10; // x±27
+  if (xd[4] > 0) b2 |= 0x20; else if (xd[4] < 0) b2 |= 0x10; // x±81
 
   return [b0, b1, b2];
 }
