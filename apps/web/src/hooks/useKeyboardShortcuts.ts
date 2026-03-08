@@ -40,6 +40,35 @@ export function useKeyboardShortcuts(finalizePath: () => void) {
         return;
       }
 
+      // Ctrl+C = copy
+      if (e.key === "c" && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        e.preventDefault();
+        useDesignStore.getState().copyObjects();
+        return;
+      }
+
+      // Ctrl+X = cut
+      if (e.key === "x" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        useDesignStore.getState().cutObjects();
+        return;
+      }
+
+      // Ctrl+V = paste (at center of current view)
+      if (e.key === "v" && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        e.preventDefault();
+        // Paste at the origin (0,0) when using keyboard shortcut
+        useDesignStore.getState().pasteObjects(0, 0);
+        return;
+      }
+
+      // Ctrl+D = duplicate
+      if (e.key === "d" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        useDesignStore.getState().duplicateObjects();
+        return;
+      }
+
       // Delete = remove selected objects
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedObjectIds.length > 0) {
