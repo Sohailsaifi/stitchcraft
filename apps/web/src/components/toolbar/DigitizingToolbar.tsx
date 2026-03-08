@@ -11,7 +11,7 @@ const tools: { id: ToolType; label: string; shortcut: string; icon: React.ReactN
   { id: "run_stitch", label: "Run Stitch", shortcut: "R", icon: <RunStitchIcon />, available: true },
   { id: "satin", label: "Satin Column", shortcut: "S", icon: <SatinIcon />, available: true },
   { id: "fill", label: "Fill Region", shortcut: "F", icon: <FillIcon />, available: true },
-  { id: "reshape", label: "Reshape Nodes", shortcut: "A", icon: <ReshapeIcon />, available: false },
+  { id: "reshape", label: "Reshape Nodes", shortcut: "A", icon: <ReshapeIcon />, available: true },
   { id: "measure", label: "Measure", shortcut: "M", icon: <MeasureIcon />, available: false },
 ];
 
