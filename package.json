@@ -1,0 +1,13 @@
+{
+  "name": "stitchcraft",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "build:wasm": "cd crates/stitchcraft-engine && wasm-pack build --target web --out-dir ../../apps/web/src/wasm",
+    "dev:api": "cd apps/api && uvicorn main:app --reload --port 8000"
+  }
+}
