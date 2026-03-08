@@ -122,16 +122,16 @@ export function calculateDesignInfo(design: Design): {
  * DST bit layout (standard Tajima):
  *
  *   Byte 1 (b0), bit 0 = LSB:
- *     bit 0: y +1     bit 1: y -1
- *     bit 2: y +9     bit 3: y -9
- *     bit 4: x -9     bit 5: x +9
- *     bit 6: x -1     bit 7: x +1
+ *     bit 0: x +1     bit 1: x -1
+ *     bit 2: x +9     bit 3: x -9
+ *     bit 4: y -9     bit 5: y +9
+ *     bit 6: y -1     bit 7: y +1
  *
  *   Byte 2 (b1):
- *     bit 0: y +3     bit 1: y -3
- *     bit 2: y +27    bit 3: y -27
- *     bit 4: x -27    bit 5: x +27
- *     bit 6: x -3     bit 7: x +3
+ *     bit 0: x +3     bit 1: x -3
+ *     bit 2: x +27    bit 3: x -27
+ *     bit 4: y -27    bit 5: y +27
+ *     bit 6: y -3     bit 7: y +3
  *
  *   Byte 3 (b2):
  *     bit 0: set 1    bit 1: set 1
@@ -187,24 +187,27 @@ function encodeDSTStitch(
   let b1 = 0;
   let b2 = 0x03; // bits 0,1 always set for valid stitch
 
+  // DST convention: negate Y before encoding (pyembroidery does the same)
+  dy = -dy;
+
   if (isColorChange) b2 |= 0xC0; // bits 7,6 → 0xC3
   else if (isJump) b2 |= 0x80;   // bit 7 → 0x83
 
-  // Encode Y using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
-  const yd = toBalancedTernary(dy);
-  if (yd[0] > 0) b0 |= 0x01; else if (yd[0] < 0) b0 |= 0x02; // y±1
-  if (yd[1] > 0) b1 |= 0x01; else if (yd[1] < 0) b1 |= 0x02; // y±3
-  if (yd[2] > 0) b0 |= 0x04; else if (yd[2] < 0) b0 |= 0x08; // y±9
-  if (yd[3] > 0) b1 |= 0x04; else if (yd[3] < 0) b1 |= 0x08; // y±27
-  if (yd[4] > 0) b2 |= 0x20; else if (yd[4] < 0) b2 |= 0x10; // y±81 (byte3 bits 5,4)
-
-  // Encode X using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
+  // Encode X using balanced ternary — lower bits (0-3) of bytes 0,1
   const xd = toBalancedTernary(dx);
-  if (xd[0] > 0) b0 |= 0x80; else if (xd[0] < 0) b0 |= 0x40; // x±1
-  if (xd[1] > 0) b1 |= 0x80; else if (xd[1] < 0) b1 |= 0x40; // x±3
-  if (xd[2] > 0) b0 |= 0x20; else if (xd[2] < 0) b0 |= 0x10; // x±9
-  if (xd[3] > 0) b1 |= 0x20; else if (xd[3] < 0) b1 |= 0x10; // x±27
+  if (xd[0] > 0) b0 |= 0x01; else if (xd[0] < 0) b0 |= 0x02; // x±1
+  if (xd[2] > 0) b0 |= 0x04; else if (xd[2] < 0) b0 |= 0x08; // x±9
+  if (xd[1] > 0) b1 |= 0x01; else if (xd[1] < 0) b1 |= 0x02; // x±3
+  if (xd[3] > 0) b1 |= 0x04; else if (xd[3] < 0) b1 |= 0x08; // x±27
   if (xd[4] > 0) b2 |= 0x04; else if (xd[4] < 0) b2 |= 0x08; // x±81 (byte3 bits 2,3)
+
+  // Encode Y using balanced ternary — upper bits (4-7) of bytes 0,1
+  const yd = toBalancedTernary(dy);
+  if (yd[0] > 0) b0 |= 0x80; else if (yd[0] < 0) b0 |= 0x40; // y±1
+  if (yd[2] > 0) b0 |= 0x20; else if (yd[2] < 0) b0 |= 0x10; // y±9
+  if (yd[1] > 0) b1 |= 0x80; else if (yd[1] < 0) b1 |= 0x40; // y±3
+  if (yd[3] > 0) b1 |= 0x20; else if (yd[3] < 0) b1 |= 0x10; // y±27
+  if (yd[4] > 0) b2 |= 0x20; else if (yd[4] < 0) b2 |= 0x10; // y±81 (byte3 bits 5,4)
 
   return [b0, b1, b2];
 }
@@ -233,11 +236,11 @@ export function exportDST(
     return buf;
   }
 
-  // Convert to 0.1mm units, apply scale, and flip Y axis
-  // Canvas: +Y = down, DST: +Y = up → negate Y
+  // Convert to 0.1mm units, apply scale
+  // Canvas and DST both use +Y = down; Y negation happens inside encodeDSTStitch
   const scaled = stitches.map((s) => ({
     x: s.x * scale * 10,
-    y: -s.y * scale * 10, // flip Y for DST
+    y: s.y * scale * 10,
     type: s.type,
   }));
 
