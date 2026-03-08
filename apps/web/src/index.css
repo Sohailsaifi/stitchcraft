@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #1a1b26;
+  --bg-secondary: #1f2033;
+  --bg-panel: #24253a;
+  --bg-toolbar: #1e1f32;
+  --bg-hover: #2d2e45;
+  --bg-active: #363854;
+  --border-color: #33354a;
+  --border-subtle: #2a2c40;
+  --text-primary: #c8cad8;
+  --text-secondary: #7a7d96;
+  --text-muted: #555770;
+  --accent: #5b7ff5;
+  --accent-hover: #7094ff;
+  --accent-glow: rgba(91, 127, 245, 0.15);
+  --danger: #e55561;
+  --success: #8bc455;
+  --warning: #e5a84b;
+  --canvas-bg: #f8f8f4;
+  --hoop-border: #b0b0b0;
+  --grid-line: #e8e8e0;
+  --selection: #5b7ff5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  user-select: none;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Tooltips */
+[title] { position: relative; }
+
+/* Panel sections */
+.panel-section {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 14px;
+}
+
+.panel-heading {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* Toolbar button base */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.12s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.toolbar-btn:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+/* Input styling */
+input[type="number"], select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input[type="number"]:focus, select:focus {
+  border-color: var(--accent);
+}
