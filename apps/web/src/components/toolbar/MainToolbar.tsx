@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { useViewStore } from "@/store/viewStore";
 import { useDesignStore } from "@/store/designStore";
 import { useUndoStore } from "@/store/undoStore";
 import {
   UndoIcon, RedoIcon, SaveIcon, OpenIcon,
-  GridIcon, HoopIcon, ExportIcon,
+  GridIcon, HoopIcon, RulerIcon, ExportIcon,
 } from "@/components/shared/Icons";
+import { ExportDialog } from "@/components/shared/ExportDialog";
 
 export function MainToolbar() {
-  const { zoom, resetView, toggleGrid, toggleHoop, showGrid, showHoop, setZoom, zoomToFit } = useViewStore();
+  const { zoom, resetView, toggleGrid, toggleHoop, toggleRulers, showGrid, showHoop, showRulers, setZoom, zoomToFit } = useViewStore();
   const { design, setDesign } = useDesignStore();
   const { canUndo, canRedo, undo, redo } = useUndoStore();
+  const [showExport, setShowExport] = useState(false);
 
   const handleUndo = () => {
     const prev = undo(design);
@@ -75,7 +78,7 @@ export function MainToolbar() {
       {/* File operations */}
       <ToolbarBtn icon={<OpenIcon />} label="Open (Ctrl+O)" onClick={handleOpen} />
       <ToolbarBtn icon={<SaveIcon />} label="Save (Ctrl+S)" onClick={handleSave} />
-      <ToolbarBtn icon={<ExportIcon />} label="Export" onClick={() => {}} />
+      <ToolbarBtn icon={<ExportIcon />} label="Export" onClick={() => setShowExport(true)} />
 
       <Divider />
 
@@ -88,6 +91,7 @@ export function MainToolbar() {
       {/* View toggles */}
       <ToolbarBtn icon={<GridIcon />} label="Toggle Grid" onClick={toggleGrid} active={showGrid} />
       <ToolbarBtn icon={<HoopIcon />} label="Toggle Hoop" onClick={toggleHoop} active={showHoop} />
+      <ToolbarBtn icon={<RulerIcon />} label="Toggle Rulers" onClick={toggleRulers} active={showRulers} />
 
       <Divider />
 
@@ -138,6 +142,8 @@ export function MainToolbar() {
           {design.hoop.width} x {design.hoop.height} mm
         </span>
       </div>
+
+      <ExportDialog open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

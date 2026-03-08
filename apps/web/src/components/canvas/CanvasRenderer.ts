@@ -12,10 +12,15 @@ interface RenderOptions {
   design: Design;
   showGrid: boolean;
   showHoop: boolean;
+  showRulers: boolean;
   gridSpacing: number;
   currentPoints: Point[];
   activeTool: ToolType;
   selectedObjectIds: string[];
+  reshapeNodeHover?: { objectId: string; pointIndex: number; rail?: 'left' | 'right' } | null;
+  isReshapeMode?: boolean;
+  boxSelectStart?: Point;
+  boxSelectEnd?: Point;
 }
 
 export function renderDesign(ctx: CanvasRenderingContext2D, opts: RenderOptions) {
@@ -71,10 +76,134 @@ export function renderDesign(ctx: CanvasRenderingContext2D, opts: RenderOptions)
   if (selectedIds && selectedIds.length > 0) {
     for (const obj of design.objects) {
       if (selectedIds.includes(obj.id)) {
-        drawSelectionBounds(ctx, obj, zoom);
+        if (opts.isReshapeMode) {
+          drawReshapeNodes(ctx, obj, zoom, opts.reshapeNodeHover ?? null);
+        } else {
+          drawSelectionBounds(ctx, obj, zoom);
+        }
       }
     }
   }
+
+  // Draw box selection marquee
+  if (opts.boxSelectStart && opts.boxSelectEnd) {
+    drawSelectionBox(ctx, opts.boxSelectStart, opts.boxSelectEnd, zoom);
+  }
+
+  ctx.restore();
+
+  // Draw rulers in screen space (after restore)
+  if (opts.showRulers) {
+    drawRulers(ctx, opts);
+  }
+}
+
+function drawRulers(ctx: CanvasRenderingContext2D, opts: RenderOptions) {
+  const { width, height, dpr, zoom, panX, panY, gridSpacing } = opts;
+
+  const canvasW = width / dpr;
+  const canvasH = height / dpr;
+  const RULER_SIZE = 20;
+
+  // Screen-space center: the origin of design space maps to this screen position
+  const centerX = canvasW / 2 + panX;
+  const centerY = canvasH / 2 + panY;
+
+  // Helper: design-space X -> screen-space X
+  const designToScreenX = (dx: number) => centerX + dx * zoom;
+  // Helper: design-space Y -> screen-space Y
+  const designToScreenY = (dy: number) => centerY + dy * zoom;
+  // Helper: screen-space X -> design-space X
+  const screenToDesignX = (sx: number) => (sx - centerX) / zoom;
+  // Helper: screen-space Y -> design-space Y
+  const screenToDesignY = (sy: number) => (sy - centerY) / zoom;
+
+  const majorSpacing = gridSpacing * 5;
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  // ── Top ruler ──
+  ctx.fillStyle = "rgba(30, 31, 50, 0.95)";
+  ctx.fillRect(0, 0, canvasW, RULER_SIZE);
+
+  // Determine visible design-space range for horizontal ruler
+  const designLeft = screenToDesignX(RULER_SIZE);
+  const designRight = screenToDesignX(canvasW);
+
+  // Draw minor ticks
+  const minorStart = Math.floor(designLeft / gridSpacing) * gridSpacing;
+  ctx.strokeStyle = "rgba(120, 125, 150, 0.4)";
+  ctx.lineWidth = 1;
+
+  for (let d = minorStart; d <= designRight; d += gridSpacing) {
+    const sx = designToScreenX(d);
+    if (sx < RULER_SIZE) continue;
+
+    const isMajor = Math.abs(d % majorSpacing) < 0.01;
+    const tickHeight = isMajor ? 10 : 5;
+
+    ctx.beginPath();
+    ctx.moveTo(sx, RULER_SIZE);
+    ctx.lineTo(sx, RULER_SIZE - tickHeight);
+    ctx.stroke();
+
+    // Labels at major ticks
+    if (isMajor) {
+      ctx.fillStyle = "rgba(120, 125, 150, 0.8)";
+      ctx.font = "9px Inter, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(`${Math.round(d)}`, sx, 2);
+    }
+  }
+
+  // ── Left ruler ──
+  ctx.fillStyle = "rgba(30, 31, 50, 0.95)";
+  ctx.fillRect(0, 0, RULER_SIZE, canvasH);
+
+  // Determine visible design-space range for vertical ruler
+  const designTop = screenToDesignY(RULER_SIZE);
+  const designBottom = screenToDesignY(canvasH);
+
+  const minorStartY = Math.floor(designTop / gridSpacing) * gridSpacing;
+  ctx.strokeStyle = "rgba(120, 125, 150, 0.4)";
+  ctx.lineWidth = 1;
+
+  for (let d = minorStartY; d <= designBottom; d += gridSpacing) {
+    const sy = designToScreenY(d);
+    if (sy < RULER_SIZE) continue;
+
+    const isMajor = Math.abs(d % majorSpacing) < 0.01;
+    const tickWidth = isMajor ? 10 : 5;
+
+    ctx.beginPath();
+    ctx.moveTo(RULER_SIZE, sy);
+    ctx.lineTo(RULER_SIZE - tickWidth, sy);
+    ctx.stroke();
+
+    // Labels at major ticks
+    if (isMajor) {
+      ctx.save();
+      ctx.fillStyle = "rgba(120, 125, 150, 0.8)";
+      ctx.font = "9px Inter, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.translate(2, sy);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(`${Math.round(d)}`, 0, 9);
+      ctx.restore();
+    }
+  }
+
+  // ── Corner square ──
+  ctx.fillStyle = "rgba(30, 31, 50, 0.95)";
+  ctx.fillRect(0, 0, RULER_SIZE, RULER_SIZE);
+  ctx.fillStyle = "rgba(120, 125, 150, 0.8)";
+  ctx.font = "7px Inter, -apple-system, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("mm", RULER_SIZE / 2, RULER_SIZE / 2);
 
   ctx.restore();
 }
@@ -402,4 +531,94 @@ function drawSelectionBounds(ctx: CanvasRenderingContext2D, obj: StitchObject, z
   for (const [cx, cy] of corners) {
     ctx.fillRect(cx! - handleSize / 2, cy! - handleSize / 2, handleSize, handleSize);
   }
+}
+
+function drawReshapeNodes(
+  ctx: CanvasRenderingContext2D,
+  obj: StitchObject,
+  _zoom: number,
+  hover: { objectId: string; pointIndex: number; rail?: 'left' | 'right' } | null
+) {
+  const nodeRadius = 1.5;
+  const hoverRadius = 2.2;
+
+  function drawNodeSet(
+    points: Point[],
+    color: string,
+    rail?: 'left' | 'right'
+  ) {
+    if (points.length === 0) return;
+
+    // Draw connecting lines
+    if (points.length >= 2) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.5;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(points[0]!.x, points[0]!.y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i]!.x, points[i]!.y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Draw nodes
+    for (let i = 0; i < points.length; i++) {
+      const pt = points[i]!;
+      const isHovered =
+        hover !== null &&
+        hover.objectId === obj.id &&
+        hover.pointIndex === i &&
+        hover.rail === rail;
+
+      const r = isHovered ? hoverRadius : nodeRadius;
+
+      // Outer glow for hovered
+      if (isHovered) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, r + 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Filled circle
+      ctx.fillStyle = isHovered ? "#ffffff" : color;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = isHovered ? color : "#ffffff";
+      ctx.lineWidth = 0.4;
+      ctx.stroke();
+    }
+  }
+
+  if (obj.type === "satin") {
+    drawNodeSet(obj.railLeft, "#4a9eff", "left");   // blue for left rail
+    drawNodeSet(obj.railRight, "#4ade80", "right");  // green for right rail
+  } else {
+    // run or fill: draw obj.points
+    drawNodeSet(obj.points, "#5b7ff5", undefined);
+  }
+}
+
+function drawSelectionBox(ctx: CanvasRenderingContext2D, start: Point, end: Point, zoom: number) {
+  const x = Math.min(start.x, end.x);
+  const y = Math.min(start.y, end.y);
+  const w = Math.abs(end.x - start.x);
+  const h = Math.abs(end.y - start.y);
+
+  // Semi-transparent blue fill
+  ctx.fillStyle = "rgba(91, 127, 245, 0.1)";
+  ctx.fillRect(x, y, w, h);
+
+  // Blue dashed border
+  ctx.strokeStyle = "rgba(91, 127, 245, 0.5)";
+  ctx.lineWidth = 1 / zoom;
+  ctx.setLineDash([4 / zoom, 3 / zoom]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
 }

@@ -162,6 +162,16 @@ export function TrashIcon() {
   );
 }
 
+export function RulerIcon() {
+  return (
+    <svg {...iconProps} width={15} height={15}>
+      <path d="M3 21V3h18" />
+      <path d="M3 7h4M3 11h3M3 15h4M3 19h3" strokeWidth="1.2" />
+      <path d="M7 3v4M11 3v3M15 3v4M19 3v3" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export function ExportIcon() {
   return (
     <svg {...iconProps} width={15} height={15}>
