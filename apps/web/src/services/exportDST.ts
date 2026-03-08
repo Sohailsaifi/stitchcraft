@@ -134,14 +134,14 @@ export function calculateDesignInfo(design: Design): {
  *     bit 6: x -3     bit 7: x +3
  *
  *   Byte 3 (b2):
- *     bit 0: y +81    bit 1: y -81
- *     bit 2: set 1    bit 3: set 1
- *     bit 4: x -81    bit 5: x +81
- *     bit 6: jump     bit 7: color change
+ *     bit 0: set 1    bit 1: set 1
+ *     bit 2: x +81    bit 3: x -81
+ *     bit 4: y -81    bit 5: y +81
+ *     bit 6: color    bit 7: jump
  *
- * Normal stitch: bits 2,3 set → base = 0x03
- * Jump stitch:   bits 2,3,6 set → base = 0x43  (some tools use 0x83)
- * Color change:  bits 2,3,6,7 set → base = 0xC3
+ * Normal stitch: bits 0,1 set → base = 0x03
+ * Jump stitch:   bits 0,1,7 set → base = 0x83
+ * Color change:  bits 0,1,6,7 set → base = 0xC3
  * End:           0x00 0x00 0xF3
  */
 /**
@@ -185,10 +185,10 @@ function encodeDSTStitch(
 
   let b0 = 0;
   let b1 = 0;
-  let b2 = 0x03; // bits 2,3 always set for valid stitch
+  let b2 = 0x03; // bits 0,1 always set for valid stitch
 
-  if (isColorChange) b2 |= 0xC0; // bits 6,7
-  else if (isJump) b2 |= 0x40;   // bit 6
+  if (isColorChange) b2 |= 0xC0; // bits 7,6 → 0xC3
+  else if (isJump) b2 |= 0x80;   // bit 7 → 0x83
 
   // Encode Y using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
   const yd = toBalancedTernary(dy);
@@ -196,7 +196,7 @@ function encodeDSTStitch(
   if (yd[1] > 0) b1 |= 0x01; else if (yd[1] < 0) b1 |= 0x02; // y±3
   if (yd[2] > 0) b0 |= 0x04; else if (yd[2] < 0) b0 |= 0x08; // y±9
   if (yd[3] > 0) b1 |= 0x04; else if (yd[3] < 0) b1 |= 0x08; // y±27
-  if (yd[4] > 0) b2 |= 0x01; else if (yd[4] < 0) b2 |= 0x02; // y±81
+  if (yd[4] > 0) b2 |= 0x20; else if (yd[4] < 0) b2 |= 0x10; // y±81 (byte3 bits 5,4)
 
   // Encode X using balanced ternary: digits for [±1, ±3, ±9, ±27, ±81]
   const xd = toBalancedTernary(dx);
@@ -204,7 +204,7 @@ function encodeDSTStitch(
   if (xd[1] > 0) b1 |= 0x80; else if (xd[1] < 0) b1 |= 0x40; // x±3
   if (xd[2] > 0) b0 |= 0x20; else if (xd[2] < 0) b0 |= 0x10; // x±9
   if (xd[3] > 0) b1 |= 0x20; else if (xd[3] < 0) b1 |= 0x10; // x±27
-  if (xd[4] > 0) b2 |= 0x20; else if (xd[4] < 0) b2 |= 0x10; // x±81
+  if (xd[4] > 0) b2 |= 0x04; else if (xd[4] < 0) b2 |= 0x08; // x±81 (byte3 bits 2,3)
 
   return [b0, b1, b2];
 }
