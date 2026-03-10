@@ -2,7 +2,7 @@ import { useToolStore, type ToolType } from "@/store/toolStore";
 import { useEffect } from "react";
 import {
   CursorIcon, HandIcon, RunStitchIcon, SatinIcon,
-  FillIcon, ReshapeIcon, MeasureIcon,
+  FillIcon, ReshapeIcon, MeasureIcon, TextIcon,
 } from "@/components/shared/Icons";
 
 const tools: { id: ToolType; label: string; shortcut: string; icon: React.ReactNode; available: boolean }[] = [
@@ -11,6 +11,7 @@ const tools: { id: ToolType; label: string; shortcut: string; icon: React.ReactN
   { id: "run_stitch", label: "Run Stitch", shortcut: "R", icon: <RunStitchIcon />, available: true },
   { id: "satin", label: "Satin Column", shortcut: "S", icon: <SatinIcon />, available: true },
   { id: "fill", label: "Fill Region", shortcut: "F", icon: <FillIcon />, available: true },
+  { id: "lettering", label: "Lettering", shortcut: "T", icon: <TextIcon />, available: true },
   { id: "reshape", label: "Reshape Nodes", shortcut: "A", icon: <ReshapeIcon />, available: true },
   { id: "measure", label: "Measure", shortcut: "M", icon: <MeasureIcon />, available: false },
 ];
@@ -56,7 +57,7 @@ export function DigitizingToolbar() {
             {/* Shortcut badge */}
             <span
               className="absolute bottom-0.5 right-0.5 text-[8px] leading-none font-medium"
-              style={{ color: activeTool === tool.id ? "rgba(255,255,255,0.7)" : "var(--text-muted)" }}
+              style={{ color: activeTool === tool.id ? "rgba(255,255,255,0.75)" : "var(--text-muted)" }}
             >
               {tool.shortcut}
             </span>

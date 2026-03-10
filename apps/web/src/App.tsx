@@ -6,8 +6,12 @@ import { ColorPalette } from "./components/panels/ColorPalette";
 import { LayerPanel } from "./components/panels/LayerPanel";
 import { StitchInfoPanel } from "./components/panels/StitchInfoPanel";
 import { StatusBar } from "./components/StatusBar";
+import { StitchPreview3D } from "./components/preview3D/StitchPreview3D";
+import { useViewStore } from "./store/viewStore";
 
 export default function App() {
+  const { show3DPreview } = useViewStore();
+
   return (
     <div className="flex flex-col w-full h-full">
       {/* Top toolbar */}
@@ -17,9 +21,19 @@ export default function App() {
         {/* Left toolbar - digitizing tools */}
         <DigitizingToolbar />
 
-        {/* Canvas area */}
-        <div className="flex-1 relative">
-          <DesignCanvas />
+        {/* Canvas area (+ optional 3D preview below) */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 relative min-h-0">
+            <DesignCanvas />
+          </div>
+          {show3DPreview && (
+            <div
+              className="shrink-0"
+              style={{ height: 240, borderTop: "1px solid var(--border-color)" }}
+            >
+              <StitchPreview3D />
+            </div>
+          )}
         </div>
 
         {/* Right panel */}

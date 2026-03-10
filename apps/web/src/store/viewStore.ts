@@ -10,6 +10,7 @@ interface ViewState {
   showGrid: boolean;
   showHoop: boolean;
   showRulers: boolean;
+  show3DPreview: boolean;
   gridSpacing: number; // mm
   cursorX: number;
   cursorY: number;
@@ -21,6 +22,7 @@ interface ViewState {
   toggleGrid: () => void;
   toggleHoop: () => void;
   toggleRulers: () => void;
+  toggle3DPreview: () => void;
   resetView: () => void;
   setCursor: (x: number, y: number) => void;
   zoomToFit: (hoopWidth: number, hoopHeight: number, canvasWidth: number, canvasHeight: number) => void;
@@ -38,6 +40,7 @@ export const useViewStore = create<ViewState>((set) => ({
   showGrid: true,
   showHoop: true,
   showRulers: true,
+  show3DPreview: false,
   gridSpacing: 10,
   cursorX: 0,
   cursorY: 0,
@@ -65,6 +68,7 @@ export const useViewStore = create<ViewState>((set) => ({
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
   toggleHoop: () => set((s) => ({ showHoop: !s.showHoop })),
   toggleRulers: () => set((s) => ({ showRulers: !s.showRulers })),
+  toggle3DPreview: () => set((s) => ({ show3DPreview: !s.show3DPreview })),
   resetView: () => set({ zoom: 3, panX: 0, panY: 0 }),
 
   setCursor: (x, y) => set({ cursorX: x, cursorY: y }),

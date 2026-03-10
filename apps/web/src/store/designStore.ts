@@ -2,8 +2,11 @@ import { create } from "zustand";
 import type { Design } from "@/models/Design";
 import { createDesign } from "@/models/Design";
 import type { StitchObject, Point } from "@/models/StitchObject";
-import { createRunStitch, createSatinColumn, createFillRegion } from "@/models/StitchObject";
+import { createRunStitch, createSatinColumn, createFillRegion, createLettering } from "@/models/StitchObject";
 import { useUndoStore } from "@/store/undoStore";
+import { generateLetteringStitches } from "@/services/letteringGenerator";
+import { optimizeStitchOrder as runOptimizer } from "@/services/stitchOptimizer";
+import type { OptimizationResult } from "@/services/stitchOptimizer";
 
 interface DesignState {
   design: Design;
@@ -26,6 +29,9 @@ interface DesignState {
   pasteObjects: (offsetX: number, offsetY: number) => void;
   duplicateObjects: () => void;
   reorderObjects: (ids: string[], position: "front" | "back") => void;
+  addLettering: (text: string, position: Point) => void;
+  regenerateLettering: (id: string) => void;
+  optimizeStitchOrder: () => OptimizationResult | null;
 }
 
 export const useDesignStore = create<DesignState>((set, get) => ({
@@ -200,5 +206,41 @@ export const useDesignStore = create<DesignState>((set, get) => ({
         updatedAt: Date.now(),
       },
     }));
+  },
+
+  addLettering: (text, position) => {
+    const { design, activeThreadId } = get();
+    const obj = createLettering(activeThreadId, text, position);
+    const stitches = generateLetteringStitches(
+      obj.text, obj.position, obj.fontFamily, obj.fontSize,
+      obj.letterSpacing, obj.stitchType, obj.stitchLength, obj.fillDensity
+    );
+    obj.generatedStitches = stitches;
+    useUndoStore.getState().pushState(structuredClone(design));
+    set((state) => ({
+      design: { ...state.design, objects: [...state.design.objects, obj], updatedAt: Date.now() },
+    }));
+  },
+
+  regenerateLettering: (id) => {
+    const obj = get().design.objects.find((o) => o.id === id);
+    if (!obj || obj.type !== "lettering") return;
+    const stitches = generateLetteringStitches(
+      obj.text, obj.position, obj.fontFamily, obj.fontSize,
+      obj.letterSpacing, obj.stitchType, obj.stitchLength, obj.fillDensity
+    );
+    get().updateObject(id, { generatedStitches: stitches });
+  },
+
+  optimizeStitchOrder: () => {
+    const { design } = get();
+    if (design.objects.length < 2) return null;
+    const result = runOptimizer(design.objects);
+    useUndoStore.getState().pushState(structuredClone(design));
+    const reordered = result.orderedIds.map((id) => design.objects.find((o) => o.id === id)!);
+    set((state) => ({
+      design: { ...state.design, objects: reordered, updatedAt: Date.now() },
+    }));
+    return result;
   },
 }));

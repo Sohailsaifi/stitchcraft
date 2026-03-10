@@ -181,3 +181,43 @@ export function ExportIcon() {
     </svg>
   );
 }
+
+export function ImportIcon() {
+  return (
+    <svg {...iconProps} width={15} height={15}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 5 17 10" />
+      <line x1="12" y1="5" x2="12" y2="17" />
+    </svg>
+  );
+}
+
+export function TextIcon() {
+  return (
+    <svg {...iconProps} width={15} height={15}>
+      <path d="M4 7V4h16v3" />
+      <path d="M9 20h6" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  );
+}
+
+export function OptimizeIcon() {
+  return (
+    <svg {...iconProps} width={15} height={15}>
+      <circle cx="5" cy="5" r="2" />
+      <circle cx="19" cy="5" r="2" />
+      <circle cx="12" cy="19" r="2" />
+      <path d="M7 5h10M19 7l-7 10M5 7l7 10" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+export function Preview3DIcon() {
+  return (
+    <svg {...iconProps} width={15} height={15}>
+      <path d="M12 2l8 4.5v7L12 18l-8-4.5v-7z" />
+      <path d="M12 2v16M4 6.5l8 5 8-5" strokeWidth="1.2" />
+    </svg>
+  );
+}

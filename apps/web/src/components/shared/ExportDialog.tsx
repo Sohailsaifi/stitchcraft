@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useDesignStore } from "@/store/designStore";
 import { collectStitches, calculateDesignInfo, exportDST } from "@/services/exportDST";
 
@@ -32,11 +33,8 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const overlayRef = useRef<HTMLDivElement>(null);
-
   const designInfo = useMemo(() => calculateDesignInfo(design), [design]);
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,14 +43,6 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
-
-  // Close on overlay click
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === overlayRef.current) onClose();
-    },
-    [onClose]
-  );
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -106,87 +96,38 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
     }
   }, [design, format, scale, center, onClose]);
 
+  const portalRoot = document.getElementById("portal-root") ?? document.body;
   if (!open) return null;
 
-  return (
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 10000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0, 0, 0, 0.6)",
-        backdropFilter: "blur(4px)",
-      }}
-    >
-      <div
-        style={{
-          background: "var(--bg-panel)",
-          border: "1px solid var(--border-color)",
-          borderRadius: 12,
-          maxWidth: 420,
-          width: "100%",
-          boxShadow: "var(--shadow-lg)",
-          overflow: "hidden",
-        }}
-      >
+  return createPortal(
+    <div className="dialog-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="dialog-box" style={{ width: 420, overflow: "hidden" }}>
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "14px 16px",
-            borderBottom: "1px solid var(--border-color)",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "var(--text-primary)",
-            }}
-          >
-            Export Design
-          </span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 0" }}>
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.2 }}>
+              Export Design
+            </h2>
+            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+              Download as machine embroidery file
+            </p>
+          </div>
           <button
             onClick={onClose}
             style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              padding: 4,
-              borderRadius: 4,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 24,
-              height: 24,
-              fontSize: 16,
-              lineHeight: 1,
+              width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border-color)",
+              background: "transparent", color: "var(--text-muted)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+              transition: "all 0.12s",
             }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-              (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "none";
-              (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
-            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="2" y1="2" x2="12" y2="12" />
-              <line x1="12" y1="2" x2="2" y2="12" />
-            </svg>
+            ✕
           </button>
         </div>
 
-        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ padding: "16px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Format Selection */}
           <div>
             <SectionLabel>Format</SectionLabel>
@@ -246,7 +187,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
                 <label
                   style={{
                     fontSize: 12,
-                    color: "var(--text-secondary)",
+                    color: "var(--text-primary)",
                     minWidth: 80,
                   }}
                 >
@@ -282,7 +223,7 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
                   alignItems: "center",
                   gap: 8,
                   fontSize: 12,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-primary)",
                   cursor: "pointer",
                 }}
               >
@@ -316,37 +257,17 @@ export function ExportDialog({ open, onClose }: ExportDialogProps) {
 
           {/* Export button */}
           <button
+            className="btn btn-primary"
             onClick={handleExport}
             disabled={exporting}
-            style={{
-              width: "100%",
-              padding: "10px 0",
-              border: "none",
-              borderRadius: 8,
-              background: exporting ? "var(--accent-hover)" : "var(--accent)",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: exporting ? "default" : "pointer",
-              opacity: exporting ? 0.8 : 1,
-              transition: "background 0.15s, opacity 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              if (!exporting) {
-                (e.currentTarget as HTMLElement).style.background = "var(--accent-hover)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!exporting) {
-                (e.currentTarget as HTMLElement).style.background = "var(--accent)";
-              }
-            }}
+            style={{ width: "100%", padding: "10px 0", fontSize: 13, fontWeight: 600 }}
           >
             {exporting ? "Exporting..." : `Export as .${format.toUpperCase()}`}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    portalRoot
   );
 }
 
@@ -356,7 +277,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 11,
         fontWeight: 600,
-        color: "var(--text-muted)",
+        color: "var(--text-secondary)",
         textTransform: "uppercase",
         letterSpacing: "0.05em",
         marginBottom: 6,
@@ -387,7 +308,7 @@ function FormatCard({
         padding: "8px 4px",
         border: selected ? "1.5px solid var(--accent)" : "1px solid var(--border-color)",
         borderRadius: 8,
-        background: selected ? "rgba(var(--accent-rgb, 99, 102, 241), 0.08)" : "var(--bg-secondary)",
+        background: selected ? "var(--accent-dim)" : "var(--bg-secondary)",
         cursor: "pointer",
         outline: "none",
         transition: "border-color 0.15s, background 0.15s",
@@ -431,7 +352,7 @@ function FormatCard({
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{label}</span>
+      <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>{label}</span>
       <span style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500 }}>
         {value}
       </span>

@@ -27,6 +27,12 @@ export interface ReshapeNodeHover {
   rail?: 'left' | 'right';
 }
 
+export interface LetteringDialogState {
+  screenX: number;
+  screenY: number;
+  designPos: Point;
+}
+
 export function useCanvasInteraction(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const pointsRef = useRef<Point[]>([]);
@@ -35,6 +41,7 @@ export function useCanvasInteraction(canvasRef: RefObject<HTMLCanvasElement | nu
   const dragStartPos = useRef<Point>({ x: 0, y: 0 });
   const dragOriginalObjects = useRef<Map<string, StitchObject>>(new Map());
   const lastPointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [letteringDialog, setLetteringDialog] = useState<LetteringDialogState | null>(null);
 
   // Reshape tool state
   const isDraggingNode = useRef(false);
@@ -429,6 +436,12 @@ export function useCanvasInteraction(canvasRef: RefObject<HTMLCanvasElement | nu
         return;
       }
 
+      // Lettering tool — single click opens dialog
+      if (activeTool === "lettering") {
+        setLetteringDialog({ screenX: e.clientX, screenY: e.clientY, designPos: pt });
+        return;
+      }
+
       // Drawing tools
       if (activeTool === "run_stitch" || activeTool === "satin" || activeTool === "fill") {
         pointsRef.current = [...pointsRef.current, pt];
@@ -656,5 +669,7 @@ export function useCanvasInteraction(canvasRef: RefObject<HTMLCanvasElement | nu
     screenToDesign,
     boxSelectRect,
     reshapeHover,
+    letteringDialog,
+    closeLetteringDialog: () => setLetteringDialog(null),
   };
 }

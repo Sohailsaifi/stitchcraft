@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ToolType = "select" | "run_stitch" | "satin" | "fill" | "reshape" | "measure" | "pan";
+export type ToolType = "select" | "run_stitch" | "satin" | "fill" | "reshape" | "measure" | "pan" | "lettering";
 
 interface ToolState {
   activeTool: ToolType;

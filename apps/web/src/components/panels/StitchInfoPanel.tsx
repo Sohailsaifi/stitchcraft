@@ -40,26 +40,36 @@ export function StitchInfoPanel() {
     };
   }, [design]);
 
+  const items = [
+    { label: "Stitches",      value: stats.totalStitches.toLocaleString() },
+    { label: "Objects",       value: stats.objectCount.toString() },
+    { label: "Jump stitches", value: stats.totalJumps.toString() },
+    { label: "Color changes", value: stats.colorChanges.toString() },
+    { label: "Thread length", value: `${stats.totalLength} mm` },
+    { label: "Sew time",      value: stats.sewTime },
+  ];
+
   return (
     <div className="panel-section" style={{ borderBottom: "none" }}>
       <div className="panel-heading">Design Info</div>
-      <div className="flex flex-col gap-1.5">
-        <InfoRow label="Stitches" value={stats.totalStitches.toLocaleString()} />
-        <InfoRow label="Jump Stitches" value={stats.totalJumps.toString()} />
-        <InfoRow label="Thread Length" value={`${stats.totalLength} mm`} />
-        <InfoRow label="Color Changes" value={stats.colorChanges.toString()} />
-        <InfoRow label="Est. Sew Time" value={stats.sewTime} />
-        <InfoRow label="Objects" value={stats.objectCount.toString()} />
+      <div style={{
+        display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
+      }}>
+        {items.map(({ label, value }) => (
+          <div key={label} style={{
+            padding: "7px 9px", borderRadius: 6,
+            background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)",
+            display: "flex", flexDirection: "column", gap: 3,
+          }}>
+            <span style={{ fontSize: 9.5, color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              {label}
+            </span>
+            <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 600 }}>
+              {value}
+            </span>
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <span className="text-[11px] font-medium" style={{ color: "var(--text-primary)" }}>{value}</span>
     </div>
   );
 }

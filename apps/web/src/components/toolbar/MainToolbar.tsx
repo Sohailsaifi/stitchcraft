@@ -5,14 +5,18 @@ import { useUndoStore } from "@/store/undoStore";
 import {
   UndoIcon, RedoIcon, SaveIcon, OpenIcon,
   GridIcon, HoopIcon, RulerIcon, ExportIcon,
+  ImportIcon, OptimizeIcon, Preview3DIcon,
 } from "@/components/shared/Icons";
 import { ExportDialog } from "@/components/shared/ExportDialog";
+import { ImportDialog } from "@/components/shared/ImportDialog";
 
 export function MainToolbar() {
-  const { zoom, resetView, toggleGrid, toggleHoop, toggleRulers, showGrid, showHoop, showRulers, setZoom, zoomToFit } = useViewStore();
-  const { design, setDesign } = useDesignStore();
+  const { zoom, resetView, toggleGrid, toggleHoop, toggleRulers, showGrid, showHoop, showRulers, setZoom, zoomToFit, show3DPreview, toggle3DPreview } = useViewStore();
+  const { design, setDesign, optimizeStitchOrder } = useDesignStore();
   const { canUndo, canRedo, undo, redo } = useUndoStore();
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [optimizeMsg, setOptimizeMsg] = useState<string | null>(null);
 
   const handleUndo = () => {
     const prev = undo(design);
@@ -49,6 +53,17 @@ export function MainToolbar() {
     input.click();
   };
 
+  const handleOptimize = () => {
+    const result = optimizeStitchOrder();
+    if (!result) {
+      setOptimizeMsg("Need 2+ objects to optimize");
+    } else {
+      const pct = Math.round(result.improvement * 100);
+      setOptimizeMsg(`Reduced jumps by ${pct}% (${Math.round(result.originalJumpDistance)}→${Math.round(result.optimizedJumpDistance)} mm)`);
+    }
+    setTimeout(() => setOptimizeMsg(null), 3500);
+  };
+
   const zoomPercent = Math.round(zoom * 100);
 
   return (
@@ -78,6 +93,7 @@ export function MainToolbar() {
       {/* File operations */}
       <ToolbarBtn icon={<OpenIcon />} label="Open (Ctrl+O)" onClick={handleOpen} />
       <ToolbarBtn icon={<SaveIcon />} label="Save (Ctrl+S)" onClick={handleSave} />
+      <ToolbarBtn icon={<ImportIcon />} label="Import embroidery file" onClick={() => setShowImport(true)} />
       <ToolbarBtn icon={<ExportIcon />} label="Export" onClick={() => setShowExport(true)} />
 
       <Divider />
@@ -92,6 +108,22 @@ export function MainToolbar() {
       <ToolbarBtn icon={<GridIcon />} label="Toggle Grid" onClick={toggleGrid} active={showGrid} />
       <ToolbarBtn icon={<HoopIcon />} label="Toggle Hoop" onClick={toggleHoop} active={showHoop} />
       <ToolbarBtn icon={<RulerIcon />} label="Toggle Rulers" onClick={toggleRulers} active={showRulers} />
+      <ToolbarBtn icon={<Preview3DIcon />} label="Toggle 3D Preview" onClick={toggle3DPreview} active={show3DPreview} />
+
+      <Divider />
+
+      {/* Optimize */}
+      <div className="relative">
+        <ToolbarBtn icon={<OptimizeIcon />} label="Optimize stitch order" onClick={handleOptimize} />
+        {optimizeMsg && (
+          <div
+            className="absolute top-10 left-0 text-[11px] px-2 py-1 rounded whitespace-nowrap z-50"
+            style={{ background: "var(--bg-panel)", border: "1px solid var(--border-color)", color: "var(--text-primary)", boxShadow: "var(--shadow-sm)" }}
+          >
+            {optimizeMsg}
+          </div>
+        )}
+      </div>
 
       <Divider />
 
@@ -106,7 +138,7 @@ export function MainToolbar() {
         </button>
         <button
           className="text-[11px] px-2 py-0.5 rounded min-w-[50px] text-center cursor-pointer"
-          style={{ color: "var(--text-secondary)", background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}
+          style={{ color: "var(--text-primary)", background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}
           onClick={resetView}
           title="Reset view (Ctrl+0)"
         >
@@ -121,7 +153,7 @@ export function MainToolbar() {
         </button>
         <button
           className="text-[10px] px-1.5 py-0.5 rounded cursor-pointer"
-          style={{ color: "var(--text-secondary)", background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}
+          style={{ color: "var(--text-primary)", background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}
           onClick={() => {
             const canvas = document.querySelector("canvas");
             if (canvas) {
@@ -138,12 +170,13 @@ export function MainToolbar() {
 
       {/* Right side info */}
       <div className="ml-auto flex items-center gap-3 pr-1">
-        <span className="text-[11px] px-2 py-0.5 rounded" style={{ color: "var(--text-muted)", background: "var(--bg-secondary)" }}>
-          {design.hoop.width} x {design.hoop.height} mm
+        <span className="text-[11px] px-2 py-0.5 rounded" style={{ color: "var(--text-secondary)", background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
+          {design.hoop.width} × {design.hoop.height} mm
         </span>
       </div>
 
       <ExportDialog open={showExport} onClose={() => setShowExport(false)} />
+      <ImportDialog open={showImport} onClose={() => setShowImport(false)} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useCanvasInteraction } from "@/hooks/useCanvas";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { renderDesign } from "./CanvasRenderer";
 import { ContextMenu } from "@/components/shared/ContextMenu";
+import { LetteringDialog } from "@/components/shared/LetteringDialog";
 
 export function DesignCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,7 +26,11 @@ export function DesignCanvas() {
     screenToDesign,
     boxSelectRect,
     reshapeHover,
+    letteringDialog,
+    closeLetteringDialog,
   } = useCanvasInteraction(canvasRef);
+
+  const { addLettering } = useDesignStore();
 
   useKeyboardShortcuts(finalizePath);
 
@@ -128,6 +133,24 @@ export function DesignCanvas() {
           y={contextMenu.y}
           onClose={closeContextMenu}
           pastePosition={contextMenu.designPos}
+        />
+      )}
+      {letteringDialog && (
+        <LetteringDialog
+          screenPos={{ x: letteringDialog.screenX, y: letteringDialog.screenY }}
+          onConfirm={({ text, fontSize, letterSpacing, stitchType }) => {
+            const pos = { ...letteringDialog.designPos };
+            addLettering(text, pos);
+            // Update the just-added object with dialog settings
+            const objs = useDesignStore.getState().design.objects;
+            const last = objs[objs.length - 1];
+            if (last && last.type === "lettering") {
+              useDesignStore.getState().updateObject(last.id, { fontSize, letterSpacing, stitchType });
+              useDesignStore.getState().regenerateLettering(last.id);
+            }
+            closeLetteringDialog();
+          }}
+          onClose={closeLetteringDialog}
         />
       )}
     </div>

@@ -48,7 +48,40 @@ export interface FillRegionObject extends BaseStitchObject {
   underlayAngle: number;
 }
 
-export type StitchObject = RunStitchObject | SatinColumnObject | FillRegionObject;
+export interface LetteringObject extends BaseStitchObject {
+  type: "lettering";
+  text: string;
+  fontFamily: string;
+  fontSize: number;       // mm height
+  letterSpacing: number;  // mm extra between letters
+  stitchType: "run" | "fill";
+  stitchLength: number;   // mm
+  fillDensity: number;    // mm row spacing
+  position: Point;        // baseline start in mm
+}
+
+export function createLettering(threadId: string, text: string, position: Point): LetteringObject {
+  return {
+    id: crypto.randomUUID(),
+    type: "lettering",
+    threadId,
+    visible: true,
+    locked: false,
+    lockStitches: false,
+    points: [position],
+    generatedStitches: [],
+    text,
+    fontFamily: "Arial",
+    fontSize: 10,
+    letterSpacing: 1,
+    stitchType: "fill",
+    stitchLength: 2,
+    fillDensity: 0.5,
+    position,
+  };
+}
+
+export type StitchObject = RunStitchObject | SatinColumnObject | FillRegionObject | LetteringObject;
 
 export function createRunStitch(threadId: string, points: Point[]): RunStitchObject {
   return {
